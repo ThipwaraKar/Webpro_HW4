@@ -6,13 +6,6 @@ var path = require('path');
 
 const http = require("http");
 const fs = require("fs");
-/*http.createServer(function (req, res) {
-	fs.readFile('signin.html', function(err, data) {
-	  res.writeHead(200, {'Content-Type': 'text/html'});
-	  res.write(data);
-	  return res.end();
-	});
-  }).listen(8080);*/
 
 var connection = mysql.createConnection({
 	host     : 'localhost',
@@ -44,7 +37,7 @@ app.get('/login.html', function(request, response) {
 	response.sendFile(path.join(__dirname + '/login.html'));
 });
 
-app.post('/auth', function(request, response) {
+/*app.post('/auth', function(request, response) {
 	var username = request.body.username;
 	var password = request.body.password;
 	if (username && password) {
@@ -62,7 +55,7 @@ app.post('/auth', function(request, response) {
 		response.send('Please enter Username and Password!');
 		response.end();
 	}
-});
+});*/
 
 app.post('/add', function (request, response) {
 	var book={
@@ -72,17 +65,12 @@ app.post('/add', function (request, response) {
 		"publisher":request.body.publisher
 	  }
 	  connection.query('INSERT INTO book SET ?',book, function (error, results, fields){
+		
 		if (error) {
-			response.send({
-			  "code":400,
-			  "failed":"error ocurred"
-			  //ISBN repleted
-			})
+			response.send("<style>h2{color: red;font-family: courier;padding-top: 200px;patext-align: center;}</style><h2>ISBN number already exist, Please check ISBN and try again.</h2>");
 		  } 
 		  else {
-			/*response.send({
-			  "code":200,
-			  "success":"user registered sucessfully"*/
+			
 			  fs.readFile("add.html", function(err, data) {
 				response.statusCode = 200;
 				response.setHeader("Content-Type","text/html");
@@ -98,16 +86,27 @@ app.post('/delete', function (request, response) {
 	
 	var title = request.body.title;
 	var isbn = request.body.isbn;
-	
 	if (title && isbn) {
+		connection.query('SELECT * FROM book WHERE isbn = ? AND title = ?', [isbn,title],function(error, results, fields){
+		if(results.length > 0){
 		connection.query('DELETE FROM book WHERE isbn = ? AND title = ?', [isbn,title], function(error, results, fields) {
 			if (error) {
 				response.send({
 				  "code":400,
 				  "failed":"error ocurred"
-				});console.log(results)
-			  } else response.send('Deleted!')
-		});
+				})//;console.log(results)
+			  } else{
+				
+				fs.readFile("delete.html", function(err, data) {
+				  response.statusCode = 200;
+				  response.setHeader("Content-Type","text/html");
+				  response.write(data);
+				  response.end();
+				  });
+			  
+			  }
+		})} else response.send('does not exit');
+	});
 	} else {
 		response.send('Please enter ISBN and title !');
 		response.end();
@@ -120,17 +119,30 @@ app.post('/update', function (request, response) {
 	var title = request.body.title;
 	var author = request.body.author;
 	var publisher = request.body.publisher;
-	if (isbn) {
+	if (isbn&&title&&author&&publisher) {
+		connection.query('SELECT * FROM book WHERE isbn = ?', [isbn],function(error, results, fields){
+		if(results.length > 0){
 		connection.query('UPDATE book SET title = ?, author = ? ,publisher = ? WHERE isbn = ?', [title,author,publisher,isbn], function(error, results, fields) {
 			if (error) {
 				response.send({
 				  "code":400,
 				  "failed":"error ocurred"
 				});console.log(results)
-			  } else response.send('Updated!')
-		});
+			  } else {
+			
+				fs.readFile("update.html", function(err, data) {
+				  response.statusCode = 200;
+				  response.setHeader("Content-Type","text/html");
+				  response.write(data);
+				  response.end();
+				  });
+			  
+			  }
+			})
+		}else response.send('ISBN does not exit');
+	}); 
 	} else {
-		response.send('Please enter ISBN number!');
+		response.send('Please enter book information!');
 		response.end();
 	}
 });
@@ -139,7 +151,8 @@ app.post('/retrieve', function(request, response,results) {
 	var title = request.body.title;
 	if (title) {
 		//var user = request.session.username;
-	
+	connection.query('SELECT * FROM book WHERE title = ?', [title],function(error, results, fields){
+	if(results.length > 0){
 	var output = '<!DOCTYPE html><html lang="en">';
     output += "<head><title>Book data</title><style>table, th, td{border: 1px solid black; text-align: center;}</style></head><body>";
     output += '<table><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Publisher</th></tr>'
@@ -156,7 +169,8 @@ app.post('/retrieve', function(request, response,results) {
         output += "</table></body></html>";
         response.send(title+'\'s book information'+output);
         response.end();
-    })
+	})} response.send('The book is not available!')
+})
 		/*connection.query('SELECT * FROM accounts WHERE username = ? ', [username], function(error, results, fields) {
 			if (results.length > 0) {
 				request.session.username = username;
@@ -190,7 +204,6 @@ app.get('/home', function(request, response) {
 	//response.end();
 
 });
-var userRouter = require('./routes/user');
 
 
 app.get('/data', function(request, response) {
@@ -213,4 +226,6 @@ app.get('/show', function(request, response) {
 		response.end();
 	})
 });
-app.listen(8080);
+app.listen(8080,function(){
+	console.log('Server is running');
+});
