@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS `book` (
+  `isbn` int(11) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `author` varchar(100) NOT NULL,
+  `publisher` varchar(100) NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+
+INSERT INTO `book` (`isbn`, `title`, `author`,`publisher`) VALUES (0618260307, 'The Hobbit', 'J. R. R. Tolkien', 'Houghton Mifflin');
+
+ALTER TABLE `book` ADD PRIMARY KEY (`isbn`);
